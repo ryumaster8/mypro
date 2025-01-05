@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout dengan Sidebar</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <style>
+        /* Kustomisasi DataTables */
+        .dataTables_wrapper .dataTables_length select {
+            padding-right: 2rem;
+            padding-left: 0.75rem;
+            border-radius: 0.375rem;
+            border-color: #E5E7EB;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 0.375rem;
+            border: 1px solid #E5E7EB;
+            padding: 0.5rem;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #1E40AF !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 0.375rem;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #2563EB !important;
+            color: white !important;
+            border: none !important;
+        }
+        /* Tambahkan style untuk animasi sidebar */
+        aside {
+            transition: all 0.3s ease-in-out;
+            transform: translateX(0);
+        }
+        
+        aside.hidden-sidebar {
+            transform: translateX(-100%);
+        }
+        
+        main {
+            transition: all 0.3s ease-in-out;
+            margin-left: 16rem; /* 256px atau w-64 */
+            padding: 1rem !important; /* Override padding default */
+        }
+        
+        main.expanded {
+            margin-left: 0;
+        }
+
+        /* Tambahan style untuk container tabel */
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        /* Update style DataTables */
+        .dataTables_wrapper {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* Update style untuk container dan tabel */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header-content {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .card-content {
+            flex: 1;
+            margin: 0;
+            background-color: white;
+        }
+
+        .table-container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* Update DataTables wrapper style */
+        .dataTables_wrapper {
+            width: 100%;
+        }
+
+        /* Menghapus padding yang tidak perlu */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            padding: 0.5rem 0;
+        }
+
+        /* Memperbesar ukuran font tabel */
+        #dataTable {
+            font-size: 1rem;
+        }
+
+        #dataTable thead th {
+            padding: 1rem;
+            font-size: 0.875rem;
+        }
+
+        #dataTable tbody td {
+            padding: 1rem;
+        }
+
+        /* Style untuk toggle button */
+        .toggle-button {
+            position: fixed;
+            right: 1.5rem;
+            top: 0.75rem;
+            z-index: 50;
+        }
+
+        /* Update style untuk sidebar */
+        aside {
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            background-color: #1F2937;
+            border-bottom: 1px solid #374151;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #4B5563 #1F2937;
+        }
+
+        /* Styling untuk scrollbar Chrome/Safari/Edge */
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background-color: #6B7280;
+        }
+
+        /* Mengatur konten utama */
+        .main-container {
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .main-container.expanded {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        /* Responsivitas untuk mobile dan tablet */
+        @media (max-width: 768px) {
+            aside {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                width: 100%;
+                max-width: 280px;
+            }
+
+            aside.show-sidebar {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            main {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 0.5rem !important;
+            }
+
+            .toggle-button {
+                display: block;
+                position: static;
+                margin-left: auto;
+            }
+
+            .header-content {
+                padding: 0.75rem 1rem;
+            }
+
+            /* Responsif DataTables */
+            .dataTables_wrapper {
+                padding: 0.5rem;
+                overflow-x: auto;
+            }
+
+            .dataTables_length,
+            .dataTables_filter {
+                width: 100%;
+                margin-bottom: 0.5rem;
+                text-align: left;
+            }
+
+            /* Card content responsif */
+            .card-content {
+                padding: 0.5rem;
+            }
+
+            /* Tabel responsif */
+            #dataTable {
+                font-size: 0.875rem;
+            }
+
+            #dataTable thead th,
+            #dataTable tbody td {
+                padding: 0.5rem;
+                white-space: nowrap;
+            }
+        }
+
+        /* Tablet dan desktop kecil */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            aside {
+                width: 240px;
+            }
+
+            main {
+                margin-left: 240px;
+            }
+        }
+
+        /* Update style untuk tabel */
+        .table-container {
+            width: 100%;
+            overflow: hidden; /* Menghilangkan scroll */
+        }
+
+        #dataTable {
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        /* Mengatur lebar kolom */
+        #dataTable th,
+        #dataTable td {
+            white-space: normal; /* Memungkinkan text wrap */
+        }
+
+        /* Mengatur lebar spesifik untuk setiap kolom */
+        #dataTable th:nth-child(1),
+        #dataTable td:nth-child(1) {
+            width: 5% !important; /* No */
+        }
+
+        #dataTable th:nth-child(2),
+        #dataTable td:nth-child(2) {
+            width: 8% !important; /* ID */
+        }
+
+        #dataTable th:nth-child(3),
+        #dataTable td:nth-child(3) {
+            width: 20% !important; /* Nama */
+        }
+
+        #dataTable th:nth-child(4),
+        #dataTable td:nth-child(4) {
+            width: 25% !important; /* Email */
+        }
+
+        #dataTable th:nth-child(5),
+        #dataTable td:nth-child(5) {
+            width: 15% !important; /* Kota */
+        }
+
+        #dataTable th:nth-child(6),
+        #dataTable td:nth-child(6) {
+            width: 15% !important; /* Status */
+        }
+
+        #dataTable th:nth-child(7),
+        #dataTable td:nth-child(7) {
+            width: 12% !important; /* Aksi */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 transition-transform duration-300">
+            <div class="sidebar-header">
+                <h1 class="text-white text-2xl font-semibold">Dashboard</h1>
+                <!-- Tambahkan form pencarian -->
+                <div class="mt-4 relative">
+                    <input type="text" 
+                           id="searchMenu" 
+                           class="w-full bg-gray-700 text-gray-200 rounded-lg pl-10 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="Cari menu...">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <button id="clearSearch" 
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white hidden">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <nav class="mt-4">
+                    <ul class="space-y-1">
+                        <!-- Manajemen Uang Kas -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Manajemen Uang Kas
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Kas</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Kas Awal</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Penambahan Uang Kas</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Penarikan Uang Kas</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Kas Akhir</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Uang Servis</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Pengguna -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                    Manajemen Pengguna
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Pengguna</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampilkan Pengguna</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Produk -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    Manajemen Produk
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Produk</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Produk</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Pengajuan Pemindahan Stok</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Permintaan Pemindahan Stok</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Riwayat Pemindahan Stok</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Produk Kosong</a>
+                                </li>
+                                <!-- Lokasi Produk sebagai submenu -->
+                                <li class="menu-item">
+                                    <button class="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">
+                                        <span class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            Lokasi Produk
+                                        </span>
+                                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="submenu ml-4 mt-1 space-y-1 hidden">
+                                        <li>
+                                            <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Lokasi Produk</a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampilkan Lokasi Produk</a>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Set Default Lokasi Produk</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <!-- Tipe Produk sebagai submenu -->
+                                <li class="menu-item">
+                                    <button class="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">
+                                        <span class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                            </svg>
+                                            Tipe Produk
+                                        </span>
+                                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="submenu ml-4 mt-1 space-y-1 hidden">
+                                        <li>
+                                            <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampilkan Tipe Produk</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Diskon -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+                                    </svg>
+                                    Manajemen Diskon
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Daftar Diskon</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Diskon</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Diskon per Produk</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Diskon per Kategori</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Tambahkan menu Manajemen Cabang setelah Manajemen Diskon -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    Manajemen Cabang
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Cabang</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Cabang</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Pelanggan -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    Manajemen Pelanggan
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Pelanggan</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Grosir -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                                    </svg>
+                                    Manajemen Grosir
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <!-- Kasir Grosir -->
+                                <li class="menu-item">
+                                    <button class="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">
+                                        <span class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                            </svg>
+                                            Kasir Grosir
+                                        </span>
+                                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="submenu ml-4 mt-1 space-y-1 hidden">
+                                        <!-- Pelanggan Grosir -->
+                                        <li class="menu-item">
+                                            <button class="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">
+                                                <span class="flex items-center">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                                    </svg>
+                                                    Pelanggan Grosir
+                                                </span>
+                                                <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                            </button>
+                                            <ul class="submenu ml-4 mt-1 space-y-1 hidden">
+                                                <li>
+                                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Pelanggan Grosir</a>
+                                                </li>
+                                                <li>
+                                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Pelanggan Grosir</a>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Transaksi -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                    Manajemen Transaksi
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Semua Transaksi</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Riwayat Transaksi Per Produk</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Transaksi</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Diskon & Promo</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Pembayaran Cicilan</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Cek Status Pembayaran</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Transaksi Belum Selesai</a>
+                                </li>
+                                <li>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Transaksi Hari Ini</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Garansi -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                    Manajemen Garansi
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Klaim Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Status Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Registrasi Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Cek Status Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Riwayat Garansi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Perpanjangan Garansi</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Servis HP dan Laptop -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Servis HP dan Laptop
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Servis</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Servis</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Riwayat Servis</a></li>
+                                <!-- Ambil Servis submenu -->
+                                <li class="menu-item">
+                                    <button class="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">
+                                        <span class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            Ambil Servis
+                                        </span>
+                                        <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="submenu ml-4 mt-1 space-y-1 hidden">
+                                        <!-- Teknisi submenu -->
+                                        <li class="menu-item">
+                                            <button class="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">
+                                                <span class="flex items-center">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                    </svg>
+                                                    Teknisi
+                                                </span>
+                                                <svg class="w-3 h-3 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                            </button>
+                                            <ul class="submenu ml-4 mt-1 space-y-1 hidden">
+                                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Teknisi</a></li>
+                                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampil Teknisi</a></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Kategori -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                    </svg>
+                                    Manajemen Kategori
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Kategori</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampilkan Kategori</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Set Default Kategori</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Supplier -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3h5m0 0v5m0-5l-6 6M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z"/>
+                                    </svg>
+                                    Manajemen Supplier
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tambah Supplier</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampilkan Supplier</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Set Default Supplier</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Pengaturan -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Pengaturan
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tema & Tampilan</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Privasi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Dashboard Kustomisasi</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Pengaturan Hak Akses</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Keamanan</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Pengaturan User Permissions</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Log Aktivitas -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                    Log Aktivitas
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tampilkan Log Aktivitas</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Manajemen Penjualan -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    Manajemen Penjualan
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Laporan Penjualan</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Lihat Penjualan</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Detail Membership</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Outlet -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    Outlet
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Edit Profil Outlet</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Upgrade Membership</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Tagihan</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Riwayat Pembayaran</a></li>
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Info Outlet</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Tampilkan Semua Session -->
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                Tampilkan Semua Session
+                            </a>
+                        </li>
+
+                        <!-- Saran -->
+                        <li class="menu-item">
+                            <button class="w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <span class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2v-12z"/>
+                                    </svg>
+                                    Saran
+                                </span>
+                                <svg class="w-4 h-4 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <ul class="submenu ml-6 mt-1 space-y-1 hidden">
+                                <li><a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg">Kirim Saran</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Logout -->
+                        <li>
+                            <a href="#" class="flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h10a3 3 0 013 3v1"/>
+                                </svg>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Toggle Button - Dipindahkan ke luar content -->
+        <button id="toggleSidebar" class="fixed top-4 right-4 z-50 text-gray-600 hover:text-blue-600 bg-white p-2 rounded-lg shadow-md">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+            </svg>
+        </button>
+
+        <!-- Content -->
+        <main class="flex-1 transition-all duration-300">
+            <div class="content-wrapper">
+                <!-- Header dengan judul -->
+                <div class="header-content">
+                    <h2 class="text-2xl font-bold text-gray-800">Data Pengguna</h2>
+                </div>
+
+                <!-- Card content -->
+                <div class="card-content bg-white">
+                    <div class="p-6 border-b">
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 text-base">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Tambah Data
+                        </button>
+                    </div>
+                    
+                    <div class="p-6">
+                        <table id="dataTable" class="w-full text-base">
+                            <thead class="text-xs text-white uppercase bg-blue-600">
+                                <tr>
+                                    <th class="px-6 py-4">No</th>
+                                    <th class="px-6 py-4">ID</th>
+                                    <th class="px-6 py-4">Nama</th>
+                                    <th class="px-6 py-4">Email</th>
+                                    <th class="px-6 py-4">Kota</th>
+                                    <th class="px-6 py-4">Status</th>
+                                    <th class="px-6 py-4">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <!-- Data akan diisi oleh JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Form Input -->
+                    <div class="p-6 bg-white border-t">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-6">Input Data Pengguna</h3>
+                        <form class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Nama -->
+                                <div>
+                                    <label for="nama" class="block text-sm font-medium text-gray-700 mb-2">Nama</label>
+                                    <input type="text" id="nama" name="nama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <!-- Email -->
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <!-- Kota dengan Select2 -->
+                                <div>
+                                    <label for="kota" class="block text-sm font-medium text-gray-700 mb-2">Kota</label>
+                                    <select id="kota" name="kota" class="select2 w-full">
+                                        <option value="">Pilih Kota</option>
+                                        <option value="Jakarta">Jakarta</option>
+                                        <option value="Surabaya">Surabaya</option>
+                                        <option value="Bandung">Bandung</option>
+                                        <option value="Medan">Medan</option>
+                                        <option value="Semarang">Semarang</option>
+                                        <option value="Yogyakarta">Yogyakarta</option>
+                                        <option value="Malang">Malang</option>
+                                        <option value="Palembang">Palembang</option>
+                                        <option value="Makassar">Makassar</option>
+                                        <option value="Denpasar">Denpasar</option>
+                                    </select>
+                                </div>
+
+                                <!-- Status dengan Select2 -->
+                                <div>
+                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                    <select id="status" name="status" class="select2 w-full">
+                                        <option value="">Pilih Status</option>
+                                        <option value="Aktif">Aktif</option>
+                                        <option value="Nonaktif">Nonaktif</option>
+                                    </select>
+                                </div>
+
+                                <!-- Role dengan Select2 Multiple -->
+                                <div class="md:col-span-2">
+                                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                                    <select id="role" name="role[]" class="select2-multiple w-full" multiple="multiple">
+                                        <option value="admin">Admin</option>
+                                        <option value="manager">Manager</option>
+                                        <option value="staff">Staff</option>
+                                        <option value="supervisor">Supervisor</option>
+                                        <option value="operator">Operator</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Tombol Submit -->
+                            <div class="flex justify-end mt-6">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Simpan Data
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tambahkan overlay untuk mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <script>
+        // Inisialisasi Select2
+        $(document).ready(function() {
+            // Select2 biasa
+            $('.select2').select2({
+                theme: 'classic',
+                width: '100%',
+                placeholder: 'Pilih opsi...',
+                allowClear: true
+            });
+
+            // Select2 multiple
+            $('.select2-multiple').select2({
+                theme: 'classic',
+                width: '100%',
+                placeholder: 'Pilih role...',
+                allowClear: true,
+                tags: true
+            });
+        });
+
+        // Data dummy
+        const dummyData = [
+            { id: 1, nama: "Budi Santoso", email: "budi@email.com", kota: "Jakarta", status: "Aktif" },
+            { id: 2, nama: "Ani Wijaya", email: "ani@email.com", kota: "Surabaya", status: "Aktif" },
+            { id: 3, nama: "Citra Dewi", email: "citra@email.com", kota: "Bandung", status: "Nonaktif" },
+            { id: 4, nama: "Dedi Kurniawan", email: "dedi@email.com", kota: "Semarang", status: "Aktif" },
+            { id: 5, nama: "Eva Mulyana", email: "eva@email.com", kota: "Yogyakarta", status: "Aktif" },
+            { id: 6, nama: "Fajar Pradana", email: "fajar@email.com", kota: "Malang", status: "Nonaktif" },
+            { id: 7, nama: "Gita Savitri", email: "gita@email.com", kota: "Medan", status: "Aktif" },
+            { id: 8, nama: "Hadi Prasetyo", email: "hadi@email.com", kota: "Palembang", status: "Aktif" },
+            { id: 9, nama: "Indah Permata", email: "indah@email.com", kota: "Makassar", status: "Nonaktif" },
+            { id: 10, nama: "Joko Widodo", email: "joko@email.com", kota: "Solo", status: "Aktif" },
+            { id: 11, nama: "Kartika Sari", email: "kartika@email.com", kota: "Denpasar", status: "Aktif" },
+            { id: 12, nama: "Lukman Hakim", email: "lukman@email.com", kota: "Banjarmasin", status: "Nonaktif" },
+            { id: 13, nama: "Maya Angelina", email: "maya@email.com", kota: "Manado", status: "Aktif" },
+            { id: 14, nama: "Nanda Pratama", email: "nanda@email.com", kota: "Padang", status: "Aktif" },
+            { id: 15, nama: "Oscar Putra", email: "oscar@email.com", kota: "Ambon", status: "Nonaktif" }
+        ];
+
+        $(document).ready(function() {
+            $('#dataTable').DataTable({
+                data: dummyData,
+                columns: [
+                    { 
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return meta.row + 1;
+                        },
+                        className: 'font-medium text-gray-900'
+                    },
+                    { 
+                        data: 'id',
+                        className: 'text-gray-600'
+                    },
+                    { 
+                        data: 'nama',
+                        className: 'font-medium text-gray-900'
+                    },
+                    { 
+                        data: 'email',
+                        className: 'text-gray-600'
+                    },
+                    { 
+                        data: 'kota',
+                        className: 'text-gray-600'
+                    },
+                    { 
+                        data: 'status',
+                        render: function(data, type, row) {
+                            const statusConfig = {
+                                'Aktif': {
+                                    class: 'bg-green-100 text-green-800 border border-green-200',
+                                    icon: `<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                          </svg>`
+                                },
+                                'Nonaktif': {
+                                    class: 'bg-red-100 text-red-800 border border-red-200',
+                                    icon: `<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                          </svg>`
+                                }
+                            };
+                            
+                            const config = statusConfig[data];
+                            return `<div class="flex items-center">
+                                        <span class="px-3 py-1 rounded-full text-xs flex items-center ${config.class}">
+                                            ${config.icon}
+                                            ${data}
+                                        </span>
+                                    </div>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function(data, type, row) {
+                            return `<div class="flex space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-800">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>`;
+                        }
+                    }
+                ],
+                pageLength: 5,
+                lengthMenu: [[5, 10, 15, 25, 50], [5, 10, 15, 25, 50]],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
+                },
+                dom: '<"flex flex-col md:flex-row md:items-center justify-between mb-4"lf>rtip',
+                ordering: true,
+                responsive: true,
+                scrollX: true,
+                autoWidth: false,
+                columnDefs: [
+                    {
+                        targets: -1,
+                        orderable: false,
+                        className: 'dt-body-center'
+                    }
+                ]
+            });
+
+            // Reinitialize DataTables on window resize
+            $(window).on('resize', function() {
+                table.columns.adjust().responsive.recalc();
+            });
+        });
+
+        // Update script untuk toggle menu
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fungsi untuk toggle submenu
+            function setupSubmenus() {
+                const menuItems = document.querySelectorAll('.menu-item > button');
+                
+                menuItems.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Toggle submenu
+                        const submenu = this.nextElementSibling;
+                        const arrow = this.querySelector('svg:last-child');
+                        
+                        if (submenu) {
+                            submenu.classList.toggle('hidden');
+                            if (arrow) {
+                                arrow.classList.toggle('rotate-180');
+                            }
+                        }
+                        
+                        // Jika ini adalah submenu level 2 atau 3, jangan tutup submenu lainnya
+                        const parentSubmenu = this.closest('.submenu');
+                        if (parentSubmenu) {
+                            return;
+                        }
+                        
+                        // Tutup submenu lain pada level yang sama
+                        const siblings = this.closest('ul').querySelectorAll('.menu-item > button');
+                        siblings.forEach(sibling => {
+                            if (sibling !== this) {
+                                const siblingSubmenu = sibling.nextElementSibling;
+                                const siblingArrow = sibling.querySelector('svg:last-child');
+                                if (siblingSubmenu) {
+                                    siblingSubmenu.classList.add('hidden');
+                                }
+                                if (siblingArrow) {
+                                    siblingArrow.classList.remove('rotate-180');
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+
+            // Setup sidebar toggle
+            const sidebar = document.querySelector('aside');
+            const mainContent = document.querySelector('main');
+            const overlay = document.querySelector('.sidebar-overlay');
+            const toggleButton = document.getElementById('toggleSidebar');
+
+            function toggleSidebar() {
+                // Toggle class untuk sidebar
+                sidebar.classList.toggle('hidden-sidebar');
+                
+                // Toggle class untuk main content
+                mainContent.classList.toggle('expanded');
+                
+                // Toggle overlay hanya untuk tampilan mobile
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show-sidebar');
+                    overlay.classList.toggle('show');
+                    document.body.classList.toggle('overflow-hidden');
+                }
+            }
+
+            // Toggle button click handler
+            toggleButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+
+            // Overlay click handler (untuk mobile)
+            overlay.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    toggleSidebar();
+                }
+            });
+
+            // Close sidebar on window resize if in mobile view
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768 && sidebar.classList.contains('show-sidebar')) {
+                    sidebar.classList.remove('show-sidebar');
+                    overlay.classList.remove('show');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+
+            // Handle clicks outside sidebar (untuk mobile)
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768 && 
+                    !sidebar.contains(e.target) && 
+                    !toggleButton.contains(e.target) && 
+                    sidebar.classList.contains('show-sidebar')) {
+                    toggleSidebar();
+                }
+            });
+
+            // Initialize submenu functionality
+            setupSubmenus();
+        });
+
+        // Tambahkan script pencarian menu
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchMenu');
+            const clearButton = document.getElementById('clearSearch');
+            const menuItems = document.querySelectorAll('.menu-item');
+            const allMenuLinks = document.querySelectorAll('nav a');
+            const allMenuButtons = document.querySelectorAll('.menu-item > button');
+
+            function showClearButton() {
+                if (searchInput.value) {
+                    clearButton.classList.remove('hidden');
+                } else {
+                    clearButton.classList.add('hidden');
+                }
+            }
+
+            function resetSearch() {
+                searchInput.value = '';
+                clearButton.classList.add('hidden');
+                menuItems.forEach(item => {
+                    item.style.display = '';
+                });
+                allMenuLinks.forEach(link => {
+                    link.style.display = '';
+                });
+                // Reset semua submenu ke keadaan tersembunyi
+                document.querySelectorAll('.submenu').forEach(submenu => {
+                    submenu.classList.add('hidden');
+                });
+                // Reset semua arrow ke keadaan normal
+                document.querySelectorAll('.menu-item > button svg:last-child').forEach(arrow => {
+                    arrow.classList.remove('rotate-180');
+                });
+            }
+
+            function searchMenu() {
+                const searchTerm = searchInput.value.toLowerCase();
+                showClearButton();
+
+                if (!searchTerm) {
+                    resetSearch();
+                    return;
+                }
+
+                menuItems.forEach(item => {
+                    const button = item.querySelector('button');
+                    const submenu = item.querySelector('.submenu');
+                    const menuText = button ? button.textContent.toLowerCase() : '';
+                    let found = false;
+
+                    // Cek teks pada button menu
+                    if (menuText.includes(searchTerm)) {
+                        found = true;
+                    }
+
+                    // Cek teks pada submenu items
+                    if (submenu) {
+                        const submenuLinks = submenu.querySelectorAll('a');
+                        submenuLinks.forEach(link => {
+                            const linkText = link.textContent.toLowerCase();
+                            if (linkText.includes(searchTerm)) {
+                                found = true;
+                                submenu.classList.remove('hidden');
+                                if (button.querySelector('svg:last-child')) {
+                                    button.querySelector('svg:last-child').classList.add('rotate-180');
+                                }
+                                link.style.display = '';
+                            } else {
+                                link.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    item.style.display = found ? '' : 'none';
+                });
+
+                // Khusus untuk menu tanpa submenu (link langsung)
+                allMenuLinks.forEach(link => {
+                    if (!link.closest('.submenu')) {
+                        const linkText = link.textContent.toLowerCase();
+                        link.style.display = linkText.includes(searchTerm) ? '' : 'none';
+                    }
+                });
+            }
+
+            // Event listeners
+            searchInput.addEventListener('input', searchMenu);
+            clearButton.addEventListener('click', resetSearch);
+
+            // Tambahkan event listener untuk keyboard shortcut (Esc)
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    resetSearch();
+                    searchInput.blur();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
